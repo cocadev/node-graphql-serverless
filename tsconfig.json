@@ -1,0 +1,21 @@
+{
+  "include": ["./**/*"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "*": ["types/*"] },
+    "sourceMap": true,
+    "target": "es6",
+    "module": "commonjs",
+    "lib": ["es5", "es6", "dom", "es2015", "esnext.asynciterable"],
+    // "allowJs": true,
+    // "checkJs": true,
+    "jsx": "react",
+    "esModuleInterop": true,
+    "noImplicitAny": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "exclude": ["dist", ".webpack", "node_modules"]
+}

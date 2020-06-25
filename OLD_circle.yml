@@ -1,0 +1,48 @@
+machine:
+
+  # general:
+  #   branches:
+  #     only:
+  #       - master
+  #       - develop
+
+  timezone:
+    UTC # Set the timezone
+
+  node:
+    version: 6.1.0
+
+  environment:
+    CIRCLE_ENV: test
+    PATH: "${PATH}:${HOME}/${CIRCLE_PROJECT_REPONAME}/node_modules/.bin"
+
+dependencies:
+  pre:
+    - yarn install # install from a different package manager
+    - yarn global add serverless@1.25.0
+    # - yarn global add webpack@2.5.0
+    # - cd client/src && npm install
+    # - cd backend/api && yarn
+    # - yarn global add eslint
+    # - yarn global add eslint-plugin-flowtype
+
+  cache_directories:
+    - ~/.cache/yarn
+
+  override:
+    - yarn
+
+test:
+  override:
+    - echo "I am a test"
+
+
+deployment:
+  staging:
+    branch: develop
+    commands:
+      - sh ./deploy_staging.sh
+  production:
+    branch: master
+    commands:
+      - sh ./deploy_production.sh

@@ -1,0 +1,20 @@
+credential.yml
+.DS_Store
+node_modules
+/config
+npm-debug.log
+users.json
+.idea
+package-lock.json
+yarn-error.log
+
+# serverless zip
+.serverless
+# webpack build files
+.webpack
+# eslint cache
+.eslintcache
+
+# vim
+*.swp
+shared-local-instance.db

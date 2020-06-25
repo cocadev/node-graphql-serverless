@@ -1,0 +1,394 @@
+service: designed-graphql
+
+frameworkVersion: ">=1.43.0 <2.0.0"
+
+provider:
+  tracing:
+    apiGateway: true
+    lambda: true
+  name: aws
+#  endpointType: REGIONAL
+  timeout: 20
+  memory: 1024
+  runtime: nodejs10.x
+  stage: ${opt:stage, 'staging'}
+  # profile: david-designmentor-staging
+  region: ${opt:region, 'us-east-1'}
+  environment:
+    SERVERLESS_PROJECT: designmentor-app
+    SERVERLESS_STAGE: ${opt:stage, self:provider.stage}
+    SERVERLESS_REGION: ${opt:region, self:provider.region}
+    LOCAL_DDB_ENDPOINT: ${file(credential.yml):LOCAL_DDB_ENDPOINT}
+    USER_COGNITO_CLIENTID: ${file(credential.yml):USER_COGNITO_CLIENTID}
+    USER_COGNITO_USERPOOLID: ${file(credential.yml):USER_COGNITO_USERPOOLID}
+    ADMIN_COGNITO_CLIENTID: ${file(credential.yml):USER_COGNITO_CLIENTID}
+    ADMIN_COGNITO_USERPOOLID: ${file(credential.yml):ADMIN_COGNITO_USERPOOLID}
+#    AUTH0CLIENTID: ${file(credential.yml):AUTH0CLIENTID}
+#    AUTH0SECRET: ${file(credential.yml):AUTH0SECRET}
+#    AUTH0_ADMINUSER_SECRET: ${file(credential.yml):AUTH0_ADMINUSER_SECRET}
+#    AUTH0_ADMINUSER_CLIENTID: ${file(credential.yml):AUTH0_ADMINUSER_CLIENTID}
+#    AVATARS3ACCESSKEY: ${file(credential.yml):AVATARS3ACCESSKEY}
+#    AVATARS3SECRETKEY: ${file(credential.yml):AVATARS3SECRETKEY}
+#    ASSETSS3ACCESSKEY: ${file(credential.yml):ASSETSS3ACCESSKEY}
+#    ASSETSS3SECRETKEY: ${file(credential.yml):ASSETSS3SECRETKEY}
+#    AUTH0DOMAIN: ${file(credential.yml):AUTH0DOMAIN}
+#    AUTH0MGTCLIENTID: ${file(credential.yml):AUTH0MGTCLIENTID}
+#    AUTH0MGTCLIENTSECRET: ${file(credential.yml):AUTH0MGTCLIENTSECRET}
+    SES_SENDAPPROVALEMAIL_ACCESSKEY: ${file(credential.yml):SES_SENDAPPROVALEMAIL_ACCESSKEY}
+    SES_SENDAPPROVALEMAIL_SECRETKEY: ${file(credential.yml):SES_SENDAPPROVALEMAIL_SECRETKEY}
+#    AUTH0_EXT_CLIENT_ID: ${file(credential.yml):AUTH0_EXT_CLIENT_ID}
+#    AUTH0_EXT_CLIENT_SECRET: ${file(credential.yml):AUTH0_EXT_CLIENT_SECRET}
+#    INVOKE_DONATIONAPI_ACCESSKEY: ${file(credential.yml):INVOKE_DONATIONAPI_ACCESSKEY}
+#    INVOKE_DONATIONAPI_SECRETKEY: ${file(credential.yml):INVOKE_DONATIONAPI_SECRETKEY}
+#    ABLY_KEY: ${file(credential.yml):ABLY_KEY}
+    SSM_ACCESS_KEY: ${file(credential.yml):SSM_ACCESS_KEY}
+    SSM_SECRETACCESS_KEY: ${file(credential.yml):SSM_SECRETACCESS_KEY}
+    MESSAGE_FILE_KMS_ENCRYPTION_ACCESS_KEY: ${file(credential.yml):MESSAGE_FILE_KMS_ENCRYPTION_ACCESS_KEY}
+    MESSAGE_FILE_KMS_ENCRYPTION_KEYID: ${file(credential.yml):MESSAGE_FILE_KMS_ENCRYPTION_KEYID}
+#    CURSOR_CRYPTO_KEY: ${file(credential.yml):CURSOR_CRYPTO_KEY}
+    #LOG_LEVEL: ${file(credential.yml):LOG_LEVEL}
+#    INVOKE_SCRAPER_ACCESSKEY: ${file(credential.yml):INVOKE_SCRAPER_ACCESSKEY}
+#    INVOKE_SCRAPER_SECRETKEY: ${file(credential.yml):INVOKE_SCRAPER_SECRETKEY}
+    ALGOLIA_APP_ID: ${file(credential.yml):ALGOLIA_APP_ID}
+    ALGOLIA_SEARCH_KEY: ${file(credential.yml):ALGOLIA_SEARCH_KEY}
+    AWS_XRAY_CONTEXT_MISSING: LOG_ERROR
+    USE_AWS: ${file(credential.yml):APP_AWS}
+    DYNAMO_ACCESS_KEY: ${file(credential.yml):DYNAMO_ACCESS_KEY}
+    DYNAMO_ACCESS_SECRETKEY: ${file(credential.yml):DYNAMO_ACCESS_SECRETKEY}
+  iamRoleStatements:
+    - Effect: "Allow" # xray permissions (required)
+      Action:
+        - "xray:PutTraceSegments"
+        - "xray:PutTelemetryRecords"
+      Resource:
+        - "*"
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+      Resource: "arn:aws:dynamodb:*:*:table/*-designed-*"
+    - Effect: Allow
+      Action:
+        - lambda:InvokeFunction
+        - lambda:InvokeAsync
+      Resource: "arn:aws:lambda:*:252100588959:function:scapers-designed-${opt:stage, self:custom.defaultStage}-handler"
+
+package:
+  include:
+    - email/**
+plugins:
+  - serverless-webpack
+#  - serverless-dynamodb-local
+  - serverless-offline
+#  - serverless-sentry
+  - serverless-plugin-tracing
+  - serverless-create-global-dynamodb-table
+
+custom:
+  globalTables:
+    - regions: # list of regions in which you want to set up global tables
+        - us-east-1
+        - us-west-2
+        - eu-central-1
+        - ap-southeast-1
+    # - tableKey: designedOrganisationTable # Cloudformation output key name if the table is created as part of same serverless service
+    # - tableName: ${opt:stage, self:custom.defaultStage}-Organisations-designed-app # if table is not part of the service then specify the table name. If tableKey param exists then tableName is ignored.
+  sentry:
+    dsn: https://a746f719e63943a19577afa5b37df7e9:e9b0213c5d7743a4bd9adab15a2bb1bb@sentry.io/259993
+  serverless-offline:
+    port: 4000
+  webpack:
+    packager: "yarn"
+    packagerOptions: {}
+    webpackConfig: ./webpack.config.js
+    includeModules:
+      forceInclude:
+        - core-js
+        - handlebars
+      forceExclude:
+        - aws-sdk
+  # dynamodb:
+  #   start:
+  #     port: 8000
+  #     sharedDb: true
+  #     migrate: false
+  #     dbPath: ../../../../db/ # located inside /db under this serverless.yml file
+  defaultStage: staging
+  defaultRegion: us-east-1
+  defaultReadProvision:
+    staging: 1
+    production: 1
+  defaultWriteProvision:
+    staging: 1
+    production: 1
+  # profiles:
+  # staging: david-designmentor-staging
+  # production: david-designmentor-production
+
+functions:
+  graphql:
+    handler: handler.graphqlHandler
+    events:
+      - http:
+          path: graphql
+          method: post
+          cors:
+            origin: "*"
+            maxAge: 43200
+      - http:
+          path: graphql
+          method: get
+          cors:
+            origin: "*"
+            maxAge: 43200
+
+resources:
+  Resources:
+    # designedUsersRoomTable:
+    #       Type: AWS::DynamoDB::Table
+    #       DeletionPolicy: Retain
+    #       Properties:
+    #         TableName: ${opt:stage, self:custom.defaultStage}-Users-designed-app
+    #         AttributeDefinitions:
+    #           - AttributeName: id
+    #             AttributeType: S
+    #           - AttributeName: role
+    #             AttributeType: S
+    #           - AttributeName: email
+    #             AttributeType: S
+    #         KeySchema:
+    #           - AttributeName: id
+    #             KeyType: HASH
+    #         ProvisionedThroughput:
+    #           ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #           WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    #         GlobalSecondaryIndexes:
+    #         - IndexName: sortByRole
+    #           KeySchema:
+    #           - AttributeName: role
+    #             KeyType: HASH
+    #           Projection:
+    #             ProjectionType: ALL
+    #           ProvisionedThroughput:
+    #             ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #             WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    #         - IndexName: sortByEmail
+    #           KeySchema:
+    #           - AttributeName: email
+    #             KeyType: HASH
+    #           Projection:
+    #             ProjectionType: ALL
+    #           ProvisionedThroughput:
+    #             ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #             WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    # designedChatRoomTable:
+    #       Type: AWS::DynamoDB::Table
+    #       DeletionPolicy: Retain
+    #       Properties:
+    #         TableName: ${opt:stage, self:custom.defaultStage}-ChatRoom-designed-app
+    #         AttributeDefinitions:
+    #           - AttributeName: id
+    #             AttributeType: S
+    #         KeySchema:
+    #           - AttributeName: id
+    #             KeyType: HASH
+    #         ProvisionedThroughput:
+    #           ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #           WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    # designedTagTable:
+    #       Type: AWS::DynamoDB::Table
+    #       DeletionPolicy: Retain
+    #       Properties:
+    #         TableName: ${opt:stage, self:custom.defaultStage}-Tags-designed-app
+    #         AttributeDefinitions:
+    #           - AttributeName: id
+    #             AttributeType: S
+    #         KeySchema:
+    #           - AttributeName: id
+    #             KeyType: HASH
+    #         ProvisionedThroughput:
+    #           ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #           WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    # designedMessagesRoomTable:
+    #       Type: AWS::DynamoDB::Table
+    #       DeletionPolicy: Retain
+    #       Properties:
+    #         TableName: ${opt:stage, self:custom.defaultStage}-Messages-designed-app
+    #         AttributeDefinitions:
+    #           - AttributeName: id
+    #             AttributeType: S
+    #           - AttributeName: chatRoomId
+    #             AttributeType: S
+    #         KeySchema:
+    #           - AttributeName: id
+    #             KeyType: HASH
+    #         ProvisionedThroughput:
+    #           ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #           WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    #         GlobalSecondaryIndexes:
+    #         - IndexName: sortByConvoId
+    #           KeySchema:
+    #           - AttributeName: chatRoomId
+    #             KeyType: HASH
+    #           Projection:
+    #             ProjectionType: ALL
+    #           ProvisionedThroughput:
+    #             ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #             WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    # designedJobTable:
+    #       Type: AWS::DynamoDB::Table
+    #       DeletionPolicy: Retain
+    #       Properties:
+    #         TableName: ${opt:stage, self:custom.defaultStage}-Jobs-designed-app
+    #         AttributeDefinitions:
+    #           - AttributeName: id
+    #             AttributeType: S
+    #         KeySchema:
+    #           - AttributeName: id
+    #             KeyType: HASH
+    #         ProvisionedThroughput:
+    #           ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #           WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    # designedChannelMessageTable:
+    #   Type: AWS::DynamoDB::Table
+    #   DeletionPolicy: Retain
+    #   Properties:
+    #     TableName: ${opt:stage, self:custom.defaultStage}-Channelmessage-designed-app
+    #     AttributeDefinitions:
+    #       - AttributeName: createdon_sender_id
+    #         AttributeType: S
+    #       - AttributeName: channel
+    #         AttributeType: S
+    #     KeySchema:
+    #       - AttributeName: channel
+    #         KeyType: HASH
+    #       - AttributeName: createdon_sender_id
+    #         KeyType: RANGE
+    #     ProvisionedThroughput:
+    #       ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #       WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    #     SSESpecification:
+    #       SSEEnabled: true
+    # designedChannelTable:
+    #   Type: AWS::DynamoDB::Table
+    #   DeletionPolicy: Retain
+    #   Properties:
+    #     TableName: ${opt:stage, self:custom.defaultStage}-Channel-designed-app
+    #     AttributeDefinitions:
+    #       - AttributeName: id
+    #         AttributeType: S
+    #     KeySchema:
+    #       - AttributeName: id
+    #         KeyType: HASH
+    #     ProvisionedThroughput:
+    #       ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #       WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+
+    # designedChannelMemberTable:
+    #   Type: AWS::DynamoDB::Table
+    #   DeletionPolicy: Retain
+    #   Properties:
+    #     TableName: ${opt:stage, self:custom.defaultStage}-Channelmember-designed-app
+    #     AttributeDefinitions:
+    #       - AttributeName: user
+    #         AttributeType: S
+    #       - AttributeName: channel
+    #         AttributeType: S
+    #       - AttributeName: last_message_on
+    #         AttributeType: S
+    #     KeySchema:
+    #       - AttributeName: channel
+    #         KeyType: HASH
+    #       - AttributeName: user
+    #         KeyType: RANGE
+    #     ProvisionedThroughput:
+    #       ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #       WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    #     SSESpecification:
+    #       SSEEnabled: true
+    #     GlobalSecondaryIndexes:
+    #     -
+    #       IndexName: "userchannels"
+    #       KeySchema:
+    #         -
+    #           AttributeName: "user"
+    #           KeyType: "HASH"
+    #         -
+    #           AttributeName: "last_message_on"
+    #           KeyType: "RANGE"
+    #       Projection:
+    #         ProjectionType: "ALL"
+    #       ProvisionedThroughput:
+    #         ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    designedLogsTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${opt:stage, self:custom.defaultStage}-Logs-designed-app
+        AttributeDefinitions:
+          - AttributeName: type
+            AttributeType: S
+          - AttributeName: source_status_timestamp
+            AttributeType: S
+        KeySchema:
+          - AttributeName: type
+            KeyType: HASH
+          - AttributeName: source_status_timestamp
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+          WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    # designedOrganisationTable:
+    #   Type: AWS::DynamoDB::Table
+    #   DeletionPolicy: Retain
+    #   Properties:
+    #     TableName: ${opt:stage, self:custom.defaultStage}-Organisation-designed-app
+    #     AttributeDefinitions:
+    #       - AttributeName: id
+    #         AttributeType: S
+    #       - AttributeName: domain
+    #         AttributeType: S
+    #       - AttributeName: createdAt
+    #         AttributeType: N
+    #       - AttributeName: name
+    #         AttributeType: S
+    #     KeySchema:
+    #       - AttributeName: id
+    #         KeyType: HASH
+    #       - AttributeName: createdAt
+    #         KeyType: RANGE
+    #     ProvisionedThroughput:
+    #       ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #       WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    #     GlobalSecondaryIndexes:
+    #     - IndexName: organisationByDomain
+    #       KeySchema:
+    #       - AttributeName: domain
+    #         KeyType: HASH
+    #       Projection:
+    #         ProjectionType: ALL
+    #       ProvisionedThroughput:
+    #         ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #         WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    #     - IndexName: organisationByName
+    #       KeySchema:
+    #       - AttributeName: name
+    #         KeyType: HASH
+    #       Projection:
+    #         ProjectionType: ALL
+    #       ProvisionedThroughput:
+    #         ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+    #         WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
+    designedStatisticsTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${opt:stage, self:custom.defaultStage}-Statistics-designed-app
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: ${self:custom.defaultReadProvision.${self:provider.stage}}
+          WriteCapacityUnits: ${self:custom.defaultWriteProvision.${self:provider.stage}}
