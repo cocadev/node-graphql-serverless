@@ -33,7 +33,7 @@
     "auth0": "^2.9.1",
     "aws-lambda": "^0.1.2",
     "aws-xray-sdk": "^2.4.0",
-    "axios": "^0.17.1",
+    "axios": "^0.19.2",
     "bluebird": "^3.5.1",
     "copy-webpack-plugin": "^5.0.3",
     "core-js": "^2.5.7",
