@@ -29,7 +29,7 @@
     "ably": "^1.0.16",
     "algoliasearch": "^3.30.0",
     "apollo-datasource-rest": "^0.4.0",
-    "apollo-server-lambda": "2.4.8",
+    "apollo-server-lambda": "2.15.0",
     "auth0": "^2.9.1",
     "aws-lambda": "^0.1.2",
     "aws-xray-sdk": "^2.4.0",
